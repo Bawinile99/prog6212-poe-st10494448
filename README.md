@@ -302,38 +302,6 @@ SELECT * FROM Enrolments;
 
 ---
 
-## Submission Checklist
-
-### Part 1 Requirements
-
-- [x] Entity Relationship Diagram (ERD) in /docs folder
-- [x] API Endpoint Plan in /docs folder  
-- [x] SQL Database Script in /docs folder
-- [x] Minimum 8 entities in my ERD
-- [x] All primary keys and foreign keys indicated
-- [x] API plan includes all six columns
-- [x] SQL script runs without errors
-- [x] Seed data included (2 Organisers, 2 Participants, 4 Events)
-- [x] Views and stored procedures included
-
-### GitHub Requirements
-
-- [ ] 20+ meaningful commits (still working on this)
-- [ ] GitHub Actions workflow configured
-- [ ] Green build screenshot in README
-- [ ] Repository made available to lecturer
-- [ ] Repository link submitted on ARC
-
-### Video Requirements
-
-- [ ] Unlisted YouTube video link
-- [ ] Voiceover explanation (my own voice, not AI)
-- [ ] Walkthrough of ERD decisions
-- [ ] Explanation of endpoint choices
-- [ ] Live SQL script execution in SSMS
-
----
-
 ## References
 
 1. Microsoft. (2026). *SQL Server Documentation*. Available at: https://learn.microsoft.com/en-us/sql/ (Accessed: 4 September 2026).
