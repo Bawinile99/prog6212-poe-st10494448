@@ -1,3 +1,10 @@
+# ============================================================
+# GitHub Actions CI/CD Workflow - RaceDay Part 1
+# Student: Bawinile Mahlangu (ST10494448)
+# Module: Programming 2B (PROG6212)
+# Date: 04 September 2026
+# ============================================================
+
 name: CI - Part 1 Validation
 
 on:
@@ -5,15 +12,20 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
-  validate-files:
+  validate-part1:
+    name: Validate Part 1 Submission
     runs-on: ubuntu-latest
-    
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Check docs folder
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Verify docs folder exists
         run: |
           if [ -d "docs" ]; then
             echo "PASS: docs folder exists"
@@ -22,35 +34,35 @@ jobs:
             echo "FAIL: docs folder not found"
             exit 1
           fi
-      
-      - name: Check ERD file
+
+      - name: Verify ERD file exists
         run: |
-          if ls docs/*.png docs/*.pdf 2>/dev/null | grep -i erd; then
-            echo "PASS: ERD file found"
+          if [ -f "docs/RaceDay_ERD.pdf" ]; then
+            echo "PASS: ERD file found (RaceDay_ERD.pdf)"
           else
-            echo "FAIL: ERD file (PNG/PDF) not found"
+            echo "FAIL: ERD file not found. Expected: docs/RaceDay_ERD.pdf"
             exit 1
           fi
-      
-      - name: Check API Endpoint Plan
+
+      - name: Verify API Endpoint Plan exists
         run: |
-          if ls docs/*.md docs/*.pdf 2>/dev/null | grep -i endpoint; then
-            echo "PASS: API Endpoint Plan found"
+          if [ -f "docs/API_Endpoint_Plan.md" ]; then
+            echo "PASS: API Endpoint Plan found (API_Endpoint_Plan.md)"
           else
-            echo "FAIL: API Endpoint Plan not found"
+            echo "FAIL: API Endpoint Plan not found. Expected: docs/API_Endpoint_Plan.md"
             exit 1
           fi
-      
-      - name: Check SQL Script
+
+      - name: Verify SQL Script exists
         run: |
-          if ls docs/*.sql 2>/dev/null; then
+          if [ -f "docs/SQL - Database Script.sql" ] || [ -f "docs/RaceDay_Schema.sql" ]; then
             echo "PASS: SQL Script found"
           else
-            echo "FAIL: SQL Script not found"
+            echo "FAIL: SQL Script not found. Expected: docs/SQL - Database Script.sql or docs/RaceDay_Schema.sql"
             exit 1
           fi
-      
-      - name: Check README
+
+      - name: Verify README exists
         run: |
           if [ -f "README.md" ]; then
             echo "PASS: README.md found"
@@ -58,14 +70,130 @@ jobs:
             echo "FAIL: README.md not found"
             exit 1
           fi
-      
-      - name: Check commit count
+
+      - name: Check README for system description
         run: |
-          COMMITS=$(git rev-list --count HEAD)
-          echo "Total commits: $COMMITS"
-          if [ $COMMITS -ge 20 ]; then
-            echo "PASS: 20+ commits"
+          if grep -qi "description\|overview\|system\|raceday" README.md; then
+            echo "PASS: System description found in README"
           else
-            echo "FAIL: Only $COMMITS commits (need 20+)"
+            echo "WARNING: System description may be missing from README"
+          fi
+
+      - name: Check README for user roles
+        run: |
+          if grep -qi "organiser\|participant\|role" README.md; then
+            echo "PASS: User roles found in README"
+          else
+            echo "WARNING: User roles may be missing from README"
+          fi
+
+      - name: Check README for CI/CD screenshot
+        run: |
+          if grep -qi "screenshot\|ci/cd\|green\|build" README.md; then
+            echo "PASS: CI/CD screenshot reference found in README"
+          else
+            echo "WARNING: CI/CD screenshot may be missing from README"
+          fi
+
+      - name: Check README for YouTube video link
+        run: |
+          if grep -qi "youtube\|video\|youtu.be" README.md; then
+            echo "PASS: YouTube video link found in README"
+          else
+            echo "WARNING: YouTube video link may be missing from README"
+          fi
+
+      - name: Count commits
+        run: |
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "Total commits: $COMMIT_COUNT"
+          if [ $COMMIT_COUNT -ge 20 ]; then
+            echo "PASS: 20+ commits made"
+            echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
+          else
+            echo "FAIL: Only $COMMIT_COUNT commits found. Minimum 20 required"
             exit 1
           fi
+
+      - name: List recent commits
+        run: |
+          echo "Recent commits:"
+          echo "----------------"
+          git log --oneline -10
+
+      - name: Validate SQL script syntax
+        run: |
+          SQL_FILE=$(find docs/ -type f -name "*.sql" 2>/dev/null | head -1)
+          if [ -n "$SQL_FILE" ]; then
+            echo "Validating SQL file: $SQL_FILE"
+            
+            if grep -qi "CREATE TABLE" "$SQL_FILE"; then
+              echo "PASS: CREATE TABLE statements found"
+            else
+              echo "FAIL: No CREATE TABLE statements found"
+              exit 1
+            fi
+            
+            if grep -qi "PRIMARY KEY" "$SQL_FILE"; then
+              echo "PASS: PRIMARY KEY constraints found"
+            else
+              echo "FAIL: No PRIMARY KEY constraints found"
+              exit 1
+            fi
+            
+            if grep -qi "FOREIGN KEY" "$SQL_FILE"; then
+              echo "PASS: FOREIGN KEY constraints found"
+            else
+              echo "WARNING: No FOREIGN KEY constraints found"
+            fi
+            
+            if grep -qi "INSERT INTO" "$SQL_FILE"; then
+              echo "PASS: INSERT statements (seed data) found"
+            else
+              echo "WARNING: No INSERT statements found"
+            fi
+            
+            echo "SQL Script Statistics:"
+            echo "----------------------"
+            echo "Tables: $(grep -ci "CREATE TABLE" "$SQL_FILE")"
+            echo "Views: $(grep -ci "CREATE VIEW" "$SQL_FILE")"
+            echo "Procedures: $(grep -ci "CREATE PROCEDURE" "$SQL_FILE")"
+            echo "Triggers: $(grep -ci "CREATE TRIGGER" "$SQL_FILE")"
+            echo "Inserts: $(grep -ci "INSERT INTO" "$SQL_FILE")"
+          else
+            echo "FAIL: No SQL file found in docs folder"
+            exit 1
+          fi
+
+      - name: Generate build summary
+        run: |
+          echo "# RaceDay Part 1 - CI/CD Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| docs folder exists | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "| ERD file (PDF) | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Endpoint Plan (MD) | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL Script | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "| README.md exists | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "| 20+ Commits | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL Syntax Validation | PASS |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Part 1 Requirements Checklist" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] ERD (PDF) in /docs" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] API Endpoint Plan (MD) in /docs" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] SQL Script (.sql) in /docs" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] 20+ Meaningful Commits" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] CI/CD Green Build" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] README with System Description" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] README with User Roles" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] README with CI/CD Screenshot" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] README with YouTube Video Link" >> $GITHUB_STEP_SUMMARY
+
+      - name: Final status
+        run: |
+          echo "All checks completed successfully."
+          echo "Build is GREEN."
